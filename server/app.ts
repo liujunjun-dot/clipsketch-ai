@@ -11,15 +11,28 @@ const app = express();
 app.use(express.json({ limit: "100mb" }));
 app.use(express.urlencoded({ limit: "100mb", extended: true }));
 
-// Initialize Google GenAI
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY,
-  httpOptions: {
-    headers: {
-      "User-Agent": "aistudio-build",
-    },
-  },
-});
+// Lazily initialize Google GenAI so a missing GEMINI_API_KEY does not crash
+// the whole serverless function at module-load time. Routes that don't need
+// the AI client (health, fallback placeholder) keep working regardless.
+let _ai: GoogleGenAI | null = null;
+function getAI(): GoogleGenAI {
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error(
+      "GEMINI_API_KEY is not configured. Set it in your environment (e.g. Vercel Project Settings -> Environment Variables) and redeploy."
+    );
+  }
+  if (!_ai) {
+    _ai = new GoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
+      httpOptions: {
+        headers: {
+          "User-Agent": "aistudio-build",
+        },
+      },
+    });
+  }
+  return _ai;
+}
 
 // API Routes
 
@@ -78,7 +91,7 @@ Ensure the generated image prompt is rich and specific to what is being drawn in
 
 Respond strictly with a JSON array conforming to this schema. Do not include markdown wraps or backticks in your output.`;
 
-    const assistantResponse = await ai.models.generateContent({
+    const assistantResponse = await getAI().models.generateContent({
       model: "gemini-3.5-flash",
       contents: [
         ...imageParts,
@@ -115,7 +128,7 @@ Respond strictly with a JSON array conforming to this schema. Do not include mar
       try {
         console.log(`Generating sketch for step ${step.stepNumber}: ${step.title}`);
 
-        const result = await ai.models.generateContent({
+        const result = await getAI().models.generateContent({
           model: "gemini-3-pro-image",
           contents: {
             parts: [
