@@ -1,0 +1,10 @@
+{
+  "name": "Video to Hand-Drawn Tutorial Generator",
+  "description": "An AI-powered system that analyzes video files or storyboard frames to generate structured step-by-step drawing tutorials, illustrated with high-fidelity sketch art via the Gemini 3 Pro Image (Nano Banana Pro) model.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
